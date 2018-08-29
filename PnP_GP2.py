@@ -32,7 +32,16 @@ G4 P500                 ;another delay\n\
 G1 X[place_X] Y[place_Y];Go to place location\n\
 G4 P500                 ;Delay half second\n\
 G1 Z[place_Z]           ;Place item\n\
-M107 T[PnP_head]        ;Turn off vacuum\n"
+M722 I1 T[PnP_head]     ;Push Item\n\
+G4 P500                 ;Delay\n\
+M722 I1 T[PnP_head]     ;Push Again\n\
+G4 P500                 ;Delay\n\
+M107 T[PnP_head]        ;Turn off vacuum\n\
+G4 P500                 ;Delay\n\
+M721 I1 T[PnP_head]     ;unprime current head\n\
+G4 P500                 ;delay 1s\n\
+M721 I1 T[PnP_head]     ;unprime current head\n\
+G4 P500                 ;delay 1s\n"
 
 keyword = ';Do PnP Stuff'
 
@@ -388,6 +397,7 @@ class window(QWidget):
             curdir = curdir.replace(' ','\ ')
             os.system('/usr/bin/xdg-open '+curdir+'/Help.pdf')
         elif platform == 'win32':
+            curdir = curdir.replace(' ','\ ')
             os.system('start '+curdir+'/Help.pdf')
 
 dfont = QFont("Arial",18)
