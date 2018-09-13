@@ -265,7 +265,10 @@ class window(QWidget):
             if cursor1.position() == -1:
                 QMessageBox.information(self,"Info","Keyword Not Found /End of Line",QMessageBox.Ok)
             else:
-                cursor1.movePosition(QTextCursor.WordRight,QTextCursor.KeepAnchor)
+                cursor1.movePosition(QTextCursor.EndOfLine)
+                cursor1.movePosition(QTextCursor.Left)
+                cursor1.select(QTextCursor.WordUnderCursor)
+
                 self.Cpos = cursor1.position()
                 self.Text1.setTextCursor(cursor1)
 
@@ -308,6 +311,8 @@ class window(QWidget):
                 placePos = []
                 pos = 0
                 cursor2 = document.find('; perimeter (bridge)',cursor1) #cursor for traversing through all perimeter
+                cursor2.movePosition(QTextCursor.EndOfLine)
+                cursor2.movePosition(QTextCursor.Left, QTextCursor.MoveAnchor, 1)
                 cursor2.select(QTextCursor.WordUnderCursor)
                 comment = cursor2.selectedText()
                 cursor3 = document.find(keyword, cursor1) #cursor to keep position of the end of PnP operation
@@ -325,30 +330,33 @@ class window(QWidget):
                 cursor5.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
                 self.height = cursor5.selectedText()
                 print(self.height)
-                while cursor2 < cursor3:
+                while cursor2 < cursor3 and cursor2.position() != -1:
                     placePos.append([[],[]])
-                    while comment in {'(bridge)','fan'}:   #Scan through all perimeter
-                        if comment == '(bridge)':
-                            cursor2.movePosition(QTextCursor.StartOfLine)
-                            cursor2.movePosition(QTextCursor.Right, QTextCursor.MoveAnchor, 4)
-                            cursor2.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
-                            cursor2.movePosition(QTextCursor.Right, QTextCursor.KeepAnchor, 2)
-                            cursor2.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
-                            placePos[pos][0].append(float(cursor2.selectedText()))
+                    print(cursor2.position(), cursor3.position())
+                    while comment == ')':   #Scan through all perimeter
+                        cursor2.movePosition(QTextCursor.StartOfLine)
+                        cursor2.movePosition(QTextCursor.Right, QTextCursor.MoveAnchor, 4)
+                        cursor2.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
+                        cursor2.movePosition(QTextCursor.Right, QTextCursor.KeepAnchor, 2)
+                        cursor2.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
+                        placePos[pos][0].append(float(cursor2.selectedText()))
 
-                            cursor2.movePosition(QTextCursor.Right, QTextCursor.MoveAnchor)
-                            cursor2.movePosition(QTextCursor.Right, QTextCursor.MoveAnchor)
-                            cursor2.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
-                            cursor2.movePosition(QTextCursor.Right, QTextCursor.KeepAnchor, 2)
-                            cursor2.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
-                            placePos[pos][1].append(float(cursor2.selectedText()))
+                        cursor2.movePosition(QTextCursor.Right, QTextCursor.MoveAnchor)
+                        cursor2.movePosition(QTextCursor.Right, QTextCursor.MoveAnchor)
+                        cursor2.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
+                        cursor2.movePosition(QTextCursor.Right, QTextCursor.KeepAnchor, 2)
+                        cursor2.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
+                        placePos[pos][1].append(float(cursor2.selectedText()))
 
                         cursor2.movePosition(QTextCursor.Down)
                         cursor2.movePosition(QTextCursor.EndOfLine)
+                        cursor2.movePosition(QTextCursor.Left)
                         cursor2.select(QTextCursor.WordUnderCursor)
                         comment = cursor2.selectedText()
                     pos += 1
                     cursor2 = document.find('; perimeter (bridge)', cursor2)
+                    cursor2.movePosition(QTextCursor.EndOfLine)
+                    cursor2.movePosition(QTextCursor.Left)
                     cursor2.select(QTextCursor.WordUnderCursor)
                     comment = cursor2.selectedText()
 
