@@ -32,16 +32,13 @@ G4 P500                 ;another delay\n\
 G1 X[place_X] Y[place_Y];Go to place location\n\
 G4 P500                 ;Delay half second\n\
 G1 Z[place_Z]           ;Place item\n\
+G4 P500                 ;Delay\n\
 M722 I1 T[PnP_head]     ;Push Item\n\
-G4 P500                 ;Delay\n\
-M722 I1 T[PnP_head]     ;Push Again\n\
-G4 P500                 ;Delay\n\
+G4 P3000                 ;Delay\n\
 M107 T[PnP_head]        ;Turn off vacuum\n\
 G4 P500                 ;Delay\n\
 M721 I1 T[PnP_head]     ;unprime current head\n\
-G4 P500                 ;delay 1s\n\
-M721 I1 T[PnP_head]     ;unprime current head\n\
-G4 P500                 ;delay 1s\n"
+G4 P2000                 ;delay 1s\n"
 
 keyword = ';Do PnP Stuff'
 
@@ -279,9 +276,9 @@ class window(QWidget):
     def push11(self): #Parse
         document = self.Text1.document()
         cursor1 = QTextCursor(document)
-        cursor1 = document.find(keyword, cursor1)
+        cursor1 = document.find(keyword, cursor1)   #Finding do pnp
         cursor5 = QTextCursor(document)
-        cursor5 = document.find('G0 X', cursor5)
+        cursor5 = document.find('G0 X', cursor5)    #Finding the origin offset
         cursor5.clearSelection()
         cursor5.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
         self.Xorigin = float(cursor5.selectedText())
@@ -290,7 +287,7 @@ class window(QWidget):
         cursor5.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
         self.Yorigin = float(cursor5.selectedText())
         cursor5.movePosition(QTextCursor.Start)
-        cursor5 = document.find('T0 ; change extruder', cursor5)
+        cursor5 = document.find('T0 ; change extruder', cursor5)    #Remove change extruder commands
         cursor5.movePosition(QTextCursor.StartOfLine)
         cursor5.movePosition(QTextCursor.Down, QTextCursor.KeepAnchor)
         cursor5.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
@@ -298,19 +295,19 @@ class window(QWidget):
         Lines = [self.Line1.text(),self.Line2.text(),self.Line3.text(),self.Line4.text(),
                 self.Line5.text(),self.Line6.text(),self.Line7.text(),self.Line8.text(),
                 self.Line9.text(),self.Line10.text(),self.Line11.text()]
-        if cursor1.position() == -1:
+        if cursor1.position() == -1:    #Check if there's a result for the keyword find
             QMessageBox.information(self,"Info","No Pick and Place operation found on the GCode",QMessageBox.Ok)
-        elif not all([self.isfloat(i) for i in Lines]):
+        elif not all([self.isfloat(i) for i in Lines]):     #Check if all the input propper numbers
             QMessageBox.information(self,"Warning","Not a Number Detected")
         else:
-            self.dispenser = [float(self.Line1.text())-self.Xorigin,
+            self.dispenser = [float(self.Line1.text())-self.Xorigin,    #dispenser location start
                               float(self.Line6.text())-self.Yorigin]
             self.change = 1
             ended = False
             while not ended:
                 placePos = []
                 pos = 0
-                cursor2 = document.find('; perimeter',cursor1) #cursor for traversing through all perimeter
+                cursor2 = document.find('; perimeter (bridge)',cursor1) #cursor for traversing through all perimeter
                 cursor2.select(QTextCursor.WordUnderCursor)
                 comment = cursor2.selectedText()
                 cursor3 = document.find(keyword, cursor1) #cursor to keep position of the end of PnP operation
@@ -330,8 +327,8 @@ class window(QWidget):
                 print(self.height)
                 while cursor2 < cursor3:
                     placePos.append([[],[]])
-                    while comment in {'perimeter','fan'}:   #Scan through all perimeter
-                        if comment == 'perimeter':
+                    while comment in {'(bridge)','fan'}:   #Scan through all perimeter
+                        if comment == '(bridge)':
                             cursor2.movePosition(QTextCursor.StartOfLine)
                             cursor2.movePosition(QTextCursor.Right, QTextCursor.MoveAnchor, 4)
                             cursor2.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
@@ -351,7 +348,7 @@ class window(QWidget):
                         cursor2.select(QTextCursor.WordUnderCursor)
                         comment = cursor2.selectedText()
                     pos += 1
-                    cursor2 = document.find('; perimeter', cursor2)
+                    cursor2 = document.find('; perimeter (bridge)', cursor2)
                     cursor2.select(QTextCursor.WordUnderCursor)
                     comment = cursor2.selectedText()
 
@@ -397,8 +394,7 @@ class window(QWidget):
             curdir = curdir.replace(' ','\ ')
             os.system('/usr/bin/xdg-open '+curdir+'/Help.pdf')
         elif platform == 'win32':
-            curdir = curdir.replace(' ','\ ')
-            os.system('start '+curdir+'/Help.pdf')
+            os.system('start "" "'+curdir+'\\Help.pdf"')
 
 dfont = QFont("Arial",18)
 app = QApplication([])
