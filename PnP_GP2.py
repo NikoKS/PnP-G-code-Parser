@@ -40,6 +40,22 @@ G4 P500                 ;Delay\n\
 M721 I1 T[PnP_head]     ;unprime current head\n\
 G4 P2000                 ;delay 1s\n"
 
+Pick_Gcode_S = "\n\
+G0 Z[height]            ;lower bed 1cm\n\
+G1 X[pick_X] Y[pick_Y]  ;Go to picking tray location\n\
+G1 Z[tray_Z]            ;bed up to pick up\n\
+G4 P500                 ;Wait half second\n\
+M106 S100 T[PnP_head]   ;Turn On vacuum \n\
+G4 P1500                ;Wait another 1.5 s\n\
+G1 Z[height]            ;lower bed\n\
+G4 P500                 ;another delay\n\
+G1 X[place_X] Y[place_Y];Go to place location\n\
+G4 P500                 ;Delay half second\n\
+G1 Z[place_Z]           ;Place item\n\
+G4 P500                 ;Delay\n\
+M107 T[PnP_head]        ;Turn off vacuum\n\
+G4 P2000                 ;delay 1s\n"
+
 keyword = ';Do PnP Stuff'
 
 class window(QWidget):
@@ -98,6 +114,10 @@ class window(QWidget):
         self.But12= QPushButton('Help')
         self.But12.clicked.connect(self.push12)
 
+        self.Rad1 = QRadioButton('Standard')
+        self.Rad1.setChecked(1)
+        self.Rad2 = QRadioButton('Magnet')
+
         self.Text1 = QTextEdit()
         self.Cpos = 0
 
@@ -135,8 +155,13 @@ class window(QWidget):
         vbox2.addWidget(label1)
         vbox2.addLayout(hbox2)
 
+        hbox6 = QHBoxLayout()
+        hbox6.addWidget(self.Rad1)
+        hbox6.addWidget(self.Rad2)
+
         vbox8 = QVBoxLayout()
         vbox8.addLayout(vbox2)
+        vbox8.addLayout(hbox6)
         vbox8.addStretch()
         vbox8.addWidget(self.But12)
         vbox8.addStretch()
@@ -185,7 +210,10 @@ class window(QWidget):
             item[1] = round(np.mean(item[1]), 3) + float(self.Line5.text())
             xdim = float(self.Line7.text())
             ydim = float(self.Line8.text())
-            PG = Pick_Gcode.replace('[pick_X]', str(self.dispenser[0]))
+            if self.Rad1.isChecked():
+                PG = Pick_Gcode_S.replace('[pick_X]', str(self.dispenser[0]))
+            else:
+                PG = Pick_Gcode.replace('[pick_X]', str(self.dispenser[0]))
             PG = PG.replace('[pick_Y]', str(self.dispenser[1]))
             PG = PG.replace('[place_X]', str(item[0]))
             PG = PG.replace('[place_Y]', str(item[1]))
@@ -295,6 +323,11 @@ class window(QWidget):
         cursor5.movePosition(QTextCursor.Down, QTextCursor.KeepAnchor)
         cursor5.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
         cursor5.removeSelectedText()
+        cursor5.setPosition(cursor1.position())
+        cursor5.movePosition(QTextCursor.Down, QTextCursor.MoveAnchor, 2)
+        cursor5.movePosition(QTextCursor.StartOfLine)
+        cursor5.movePosition(QTextCursor.Right, QTextCursor.KeepAnchor, 2)
+        tool = cursor5.selectedText()
         Lines = [self.Line1.text(),self.Line2.text(),self.Line3.text(),self.Line4.text(),
                 self.Line5.text(),self.Line6.text(),self.Line7.text(),self.Line8.text(),
                 self.Line9.text(),self.Line10.text(),self.Line11.text()]
@@ -302,7 +335,7 @@ class window(QWidget):
             QMessageBox.information(self,"Info","No Pick and Place operation found on the GCode",QMessageBox.Ok)
         elif not all([self.isfloat(i) for i in Lines]):     #Check if all the input propper numbers
             QMessageBox.information(self,"Warning","Not a Number Detected")
-        else:
+        elif tool == 'T3':
             self.dispenser = [float(self.Line1.text())-self.Xorigin,    #dispenser location start
                               float(self.Line6.text())-self.Yorigin]
             self.change = 1
@@ -395,6 +428,8 @@ class window(QWidget):
                 cursor2.movePosition(QTextCursor.StartOfLine)
                 if cursor1.anchor() != cursor2.position():
                     ended = True
+        else:
+            QMessageBox.information(self,"Info","Tool assignment incorect!",QMessageBox.Ok)
 
     def push12(self):   #Open Help Page
         curdir = os.getcwd()
