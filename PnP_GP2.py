@@ -291,12 +291,16 @@ class window(QWidget):
             cursor1.setPosition(self.Cpos,QTextCursor.MoveAnchor)
             cursor1 = document.find(self.FindString.text(), cursor1)
             if cursor1.position() == -1:
-                QMessageBox.information(self,"Info","Keyword Not Found /End of Line",QMessageBox.Ok)
+                cursor1.setPosition(1)
+                cursor1 = document.find(self.FindString.text(), cursor1)
+                if cursor1.position() == -1:
+                    QMessageBox.information(self,"Info","Keyword Not Found /End of Line",QMessageBox.Ok)
+                else:
+                    cursor1.select(QTextCursor.WordUnderCursor)
+                    self.Cpos = cursor1.position()
+                    self.Text1.setTextCursor(cursor1)
             else:
-                cursor1.movePosition(QTextCursor.EndOfLine)
-                cursor1.movePosition(QTextCursor.Left)
                 cursor1.select(QTextCursor.WordUnderCursor)
-
                 self.Cpos = cursor1.position()
                 self.Text1.setTextCursor(cursor1)
 
@@ -317,12 +321,12 @@ class window(QWidget):
         cursor5.movePosition(QTextCursor.Right, QTextCursor.MoveAnchor)
         cursor5.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
         self.Yorigin = float(cursor5.selectedText())
-        cursor5.movePosition(QTextCursor.Start)
-        cursor5 = document.find('T0 ; change extruder', cursor5)    #Remove change extruder commands
-        cursor5.movePosition(QTextCursor.StartOfLine)
-        cursor5.movePosition(QTextCursor.Down, QTextCursor.KeepAnchor)
-        cursor5.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
-        cursor5.removeSelectedText()
+        #cursor5.movePosition(QTextCursor.Start)
+        #cursor5 = document.find('T0 ; change extruder', cursor5)    #Remove change extruder commands
+        #cursor5.movePosition(QTextCursor.StartOfLine)
+        #cursor5.movePosition(QTextCursor.Down, QTextCursor.KeepAnchor)
+        #cursor5.movePosition(QTextCursor.EndOfLine, QTextCursor.KeepAnchor)
+        #cursor5.removeSelectedText()
         cursor5.setPosition(cursor1.position())
         cursor5.movePosition(QTextCursor.Down, QTextCursor.MoveAnchor, 2)
         cursor5.movePosition(QTextCursor.StartOfLine)
@@ -335,101 +339,109 @@ class window(QWidget):
             QMessageBox.information(self,"Info","No Pick and Place operation found on the GCode",QMessageBox.Ok)
         elif not all([self.isfloat(i) for i in Lines]):     #Check if all the input propper numbers
             QMessageBox.information(self,"Warning","Not a Number Detected")
-        elif tool == 'T3':
-            self.dispenser = [float(self.Line1.text())-self.Xorigin,    #dispenser location start
-                              float(self.Line6.text())-self.Yorigin]
-            self.change = 1
-            ended = False
-            while not ended:
-                placePos = []
-                pos = 0
-                cursor2 = document.find('; perimeter (bridge)',cursor1) #cursor for traversing through all perimeter
-                cursor2.movePosition(QTextCursor.EndOfLine)
-                cursor2.movePosition(QTextCursor.Left, QTextCursor.MoveAnchor, 1)
-                cursor2.select(QTextCursor.WordUnderCursor)
-                comment = cursor2.selectedText()
-                cursor3 = document.find(keyword, cursor1) #cursor to keep position of the end of PnP operation
-                cursor4 = QTextCursor(document)
-                cursor4.setPosition(cursor3.position())
-                cursor4.movePosition(QTextCursor.StartOfLine)
-                if cursor3.anchor() != cursor4.position():
-                    ended = True
-                    cursor3 = document.find('M107', cursor1)
-                cursor5 = document.find('; move to next layer', cursor1, QTextDocument.FindBackward)
+        else:
+            while tool != 'T3' and cursor1.position() != -1:
+                cursor1 = document.find(keyword, cursor1)
+                cursor5.setPosition(cursor1.position())
+                cursor5.movePosition(QTextCursor.Down, QTextCursor.MoveAnchor, 2)
                 cursor5.movePosition(QTextCursor.StartOfLine)
-                cursor5.movePosition(QTextCursor.Right,QTextCursor.MoveAnchor,4)
-                cursor5.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
                 cursor5.movePosition(QTextCursor.Right, QTextCursor.KeepAnchor, 2)
-                cursor5.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
-                self.height = cursor5.selectedText()
-                print(self.height)
-                while cursor2 < cursor3 and cursor2.position() != -1:
-                    placePos.append([[],[]])
-                    print(cursor2.position(), cursor3.position())
-                    while comment == ')':   #Scan through all perimeter
-                        cursor2.movePosition(QTextCursor.StartOfLine)
-                        cursor2.movePosition(QTextCursor.Right, QTextCursor.MoveAnchor, 4)
-                        cursor2.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
-                        cursor2.movePosition(QTextCursor.Right, QTextCursor.KeepAnchor, 2)
-                        cursor2.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
-                        placePos[pos][0].append(float(cursor2.selectedText()))
+                tool = cursor5.selectedText()
+            if tool == 'T3':
+                self.dispenser = [float(self.Line1.text())-self.Xorigin,    #dispenser location start
+                                  float(self.Line6.text())-self.Yorigin]
+                self.change = 1
+                ended = False
+                while not ended:
+                    placePos = []
+                    pos = 0
+                    cursor2 = document.find('; perimeter (bridge)',cursor1) #cursor for traversing through all perimeter
+                    cursor2.movePosition(QTextCursor.EndOfLine)
+                    cursor2.movePosition(QTextCursor.Left, QTextCursor.MoveAnchor, 1)
+                    cursor2.select(QTextCursor.WordUnderCursor)
+                    comment = cursor2.selectedText()
+                    cursor3 = document.find(keyword, cursor1) #cursor to keep position of the end of PnP operation
+                    cursor4 = QTextCursor(document)
+                    cursor4.setPosition(cursor3.position())
+                    cursor4.movePosition(QTextCursor.StartOfLine)
+                    if cursor3.anchor() != cursor4.position():
+                        ended = True
+                        cursor3 = document.find('M107', cursor1)
+                    cursor5 = document.find('; move to next layer', cursor1, QTextDocument.FindBackward)
+                    cursor5.movePosition(QTextCursor.StartOfLine)
+                    cursor5.movePosition(QTextCursor.Right,QTextCursor.MoveAnchor,4)
+                    cursor5.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
+                    cursor5.movePosition(QTextCursor.Right, QTextCursor.KeepAnchor, 2)
+                    cursor5.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
+                    self.height = cursor5.selectedText()
+                    print(self.height)
+                    while cursor2 < cursor3 and cursor2.position() != -1:
+                        placePos.append([[],[]])
+                        print(cursor2.position(), cursor3.position())
+                        while comment == ')':   #Scan through all perimeter
+                            cursor2.movePosition(QTextCursor.StartOfLine)
+                            cursor2.movePosition(QTextCursor.Right, QTextCursor.MoveAnchor, 4)
+                            cursor2.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
+                            cursor2.movePosition(QTextCursor.Right, QTextCursor.KeepAnchor, 2)
+                            cursor2.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
+                            placePos[pos][0].append(float(cursor2.selectedText()))
 
-                        cursor2.movePosition(QTextCursor.Right, QTextCursor.MoveAnchor)
-                        cursor2.movePosition(QTextCursor.Right, QTextCursor.MoveAnchor)
-                        cursor2.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
-                        cursor2.movePosition(QTextCursor.Right, QTextCursor.KeepAnchor, 2)
-                        cursor2.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
-                        placePos[pos][1].append(float(cursor2.selectedText()))
+                            cursor2.movePosition(QTextCursor.Right, QTextCursor.MoveAnchor)
+                            cursor2.movePosition(QTextCursor.Right, QTextCursor.MoveAnchor)
+                            cursor2.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
+                            cursor2.movePosition(QTextCursor.Right, QTextCursor.KeepAnchor, 2)
+                            cursor2.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
+                            placePos[pos][1].append(float(cursor2.selectedText()))
 
-                        cursor2.movePosition(QTextCursor.Down)
+                            cursor2.movePosition(QTextCursor.Down)
+                            cursor2.movePosition(QTextCursor.EndOfLine)
+                            cursor2.movePosition(QTextCursor.Left)
+                            cursor2.select(QTextCursor.WordUnderCursor)
+                            comment = cursor2.selectedText()
+                        pos += 1
+                        cursor2 = document.find('; perimeter (bridge)', cursor2)
                         cursor2.movePosition(QTextCursor.EndOfLine)
                         cursor2.movePosition(QTextCursor.Left)
                         cursor2.select(QTextCursor.WordUnderCursor)
                         comment = cursor2.selectedText()
-                    pos += 1
-                    cursor2 = document.find('; perimeter (bridge)', cursor2)
-                    cursor2.movePosition(QTextCursor.EndOfLine)
-                    cursor2.movePosition(QTextCursor.Left)
-                    cursor2.select(QTextCursor.WordUnderCursor)
-                    comment = cursor2.selectedText()
 
-                if not ended:
-                    cursor3.movePosition(QTextCursor.Up)
-                    cursor3.movePosition(QTextCursor.StartOfLine)
-                    cursor4.movePosition(QTextCursor.Down)
-                    cursor4.movePosition(QTextCursor.EndOfLine)
-                    cursor3.setPosition(cursor4.position(),QTextCursor.KeepAnchor)
-                    cursor3.removeSelectedText()
+                    if not ended:
+                        cursor3.movePosition(QTextCursor.Up)
+                        cursor3.movePosition(QTextCursor.StartOfLine)
+                        cursor4.movePosition(QTextCursor.Down)
+                        cursor4.movePosition(QTextCursor.EndOfLine)
+                        cursor3.setPosition(cursor4.position(),QTextCursor.KeepAnchor)
+                        cursor3.removeSelectedText()
 
-                    cursor3 = document.find(';announce', cursor1)
-                    cursor3.movePosition(QTextCursor.Up)
-                    cursor3.movePosition(QTextCursor.EndOfLine)
-                    cursor1.movePosition(QTextCursor.Up)
-                    cursor1.movePosition(QTextCursor.StartOfLine)
-                    cursor1.setPosition(cursor3.position(),QTextCursor.KeepAnchor)
-                    cursor1.removeSelectedText()
+                        cursor3 = document.find(';announce', cursor1)
+                        cursor3.movePosition(QTextCursor.Up)
+                        cursor3.movePosition(QTextCursor.EndOfLine)
+                        cursor1.movePosition(QTextCursor.Up)
+                        cursor1.movePosition(QTextCursor.StartOfLine)
+                        cursor1.setPosition(cursor3.position(),QTextCursor.KeepAnchor)
+                        cursor1.removeSelectedText()
 
-                    self.insert_GCode(cursor1,placePos)
+                        self.insert_GCode(cursor1,placePos)
 
-                else:
-                    cursor3.movePosition(QTextCursor.Up)
-                    cursor3.movePosition(QTextCursor.EndOfLine)
-                    cursor1.movePosition(QTextCursor.Up)
-                    cursor1.movePosition(QTextCursor.StartOfLine)
-                    cursor1.setPosition(cursor3.position(),QTextCursor.KeepAnchor)
-                    cursor1.removeSelectedText()
+                    else:
+                        cursor3.movePosition(QTextCursor.Up)
+                        cursor3.movePosition(QTextCursor.EndOfLine)
+                        cursor1.movePosition(QTextCursor.Up)
+                        cursor1.movePosition(QTextCursor.StartOfLine)
+                        cursor1.setPosition(cursor3.position(),QTextCursor.KeepAnchor)
+                        cursor1.removeSelectedText()
 
-                    self.insert_GCode(cursor1, placePos)
+                        self.insert_GCode(cursor1, placePos)
 
-                print(placePos)
-                self.Text1.setTextCursor(cursor1)
-                cursor1 = document.find(keyword,cursor1)
-                cursor2.setPosition(cursor1.position())
-                cursor2.movePosition(QTextCursor.StartOfLine)
-                if cursor1.anchor() != cursor2.position():
-                    ended = True
-        else:
-            QMessageBox.information(self,"Info","Tool assignment incorect!",QMessageBox.Ok)
+                    print(placePos)
+                    self.Text1.setTextCursor(cursor1)
+                    cursor1 = document.find(keyword,cursor1)
+                    cursor2.setPosition(cursor1.position())
+                    cursor2.movePosition(QTextCursor.StartOfLine)
+                    if cursor1.anchor() != cursor2.position():
+                        ended = True
+            else:
+                QMessageBox.information(self,"Info","Tool assignment incorect!",QMessageBox.Ok)
 
     def push12(self):   #Open Help Page
         curdir = os.getcwd()
