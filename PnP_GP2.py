@@ -254,7 +254,7 @@ class window(QWidget):
                     self.dispenser[disp][0] += float(self.Line2.text())
                     self.change[disp] += 1
                 else:
-                    self.dispenser[disp][0] += float(self.Line[disp-1][1])
+                    self.dispenser[disp][0] += float(self.Line[disp-1][1].text())
                     self.change[disp] += 1
             else:
                 if disp == 0:
@@ -262,8 +262,8 @@ class window(QWidget):
                     self.dispenser[disp][1] += float(self.Line3.text())
                     self.change[disp] = 1
                 else:
-                    self.dispenser[disp][0] = float(self.Line[disp-1][2]) - self.Xorigin
-                    self.dispenseri[disp][1] += float(self.Line[disp][4])
+                    self.dispenser[disp][0] = float(self.Line[disp-1][2].text()) - self.Xorigin
+                    self.dispenseri[disp][1] += float(self.Line[disp-1][4].text())
                     self.changei[disp] = 1
 
         TC2 = Tool_Change_Gcode2.replace('[current_head]', self.Line10.text())
@@ -447,7 +447,7 @@ class window(QWidget):
                               float(self.Line6.text())-self.Yorigin]]
             self.change = [1]     #For keeping track change change in tray row
             for item in self.Line:
-                self.dispenser.append([float(item[0]), float(item[3])])
+                self.dispenser.append([float(item[0].text()) - self.Xorigin, float(item[3].text())-self.Yorigin])
                 self.change.append(1)
 
             ended = 0 #flag for determining if the parser should keep searching for next pick and place operation block
