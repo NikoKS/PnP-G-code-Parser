@@ -224,8 +224,10 @@ class window(QWidget):
     def insert_GCode(self,cursor,placePos):
         #Insert PNP Tool Change G-code
         TC = Tool_Change_Gcode.replace('[current_head]', self.Line10.text())
-        TC = TC.replace('[height]', str(float(self.height)+10))
+        TC = TC.replace('[height]', str(float(self.height[-1])+10))
         cursor.insertText(TC)
+
+        pos = 0 #counter to be increased for Height list
 
         #Insert PNP Operation G-Code
         for item in placePos:
@@ -248,9 +250,9 @@ class window(QWidget):
             PG = PG.replace('[pick_Y]', str(self.dispenser[disp][1]))
             PG = PG.replace('[place_X]', str(item[0]))
             PG = PG.replace('[place_Y]', str(item[1]))
-            PG = PG.replace('[height]', str(float(self.height)+10))
+            PG = PG.replace('[height]', str(float(self.height[pos])+10))
             PG = PG.replace('[tray_Z]', self.Line9.text())
-            PG = PG.replace('[place_Z]', self.height)
+            PG = PG.replace('[place_Z]', self.height[pos])
             PG = PG.replace('[PnP_head]', self.Line11.text())
             cursor.insertText(PG)
             if self.change[disp] != xdim:
@@ -269,6 +271,7 @@ class window(QWidget):
                     self.dispenser[disp][0] = float(self.Line[disp-1][2].text()) - self.Xorigin
                     self.dispenseri[disp][1] += float(self.Line[disp-1][4].text())
                     self.changei[disp] = 1
+            pos += 1
 
         TC2 = Tool_Change_Gcode2.replace('[current_head]', self.Line10.text())
         cursor.insertText(TC2)
@@ -481,19 +484,22 @@ class window(QWidget):
                     ended = True    #keyword is at end of file, reached last
                                     #operation block
                     cursor3 = document.find('M107', cursor1)
-                #Get Layer Height
-                cursor4 = document.find('; move to next layer', cursor1, QTextDocument.FindBackward)
-                cursor4.movePosition(QTextCursor.StartOfLine)
-                cursor4.movePosition(QTextCursor.Right,QTextCursor.MoveAnchor,4)
-                cursor4.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
-                cursor4.movePosition(QTextCursor.Right, QTextCursor.KeepAnchor, 2)
-                cursor4.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
-                self.height = cursor4.selectedText()
-                print(self.height)
+
+                #List of Layer height
+                self.height = []
 
                 #do operation as long cursor 2 have not exceed cursor3
                 while cursor2<cursor3 and cursor2.position() != -1:
                     placePos.append([[],[],None])
+
+                    #search for the next layer height
+                    cursor4 = document.find('; move to next layer', cursor2, QTextDocument.FindBackward)
+                    cursor4.movePosition(QTextCursor.StartOfLine)
+                    cursor4.movePosition(QTextCursor.Right,QTextCursor.MoveAnchor,4)
+                    cursor4.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
+                    cursor4.movePosition(QTextCursor.Right, QTextCursor.KeepAnchor, 2)
+                    cursor4.movePosition(QTextCursor.WordRight, QTextCursor.KeepAnchor)
+                    self.height.append(cursor4.selectedText())
 
                     #Scan through all perimeter and append X and Y coordinates
                     while comment == ')':
