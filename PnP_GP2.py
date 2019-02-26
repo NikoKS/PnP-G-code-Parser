@@ -26,14 +26,14 @@ G4 P1000                ;delay 1s\n"
 
 Pick_Gcode = "\n\
 G0 Z[height]            ;lower bed 1cm\n\
-G1 X[pick_X] Y[pick_Y]  ;Go to picking tray location\n\
-G1 Z[tray_Z]            ;bed up to pick up\n\
+G0 X[pick_X] Y[pick_Y]  ;Go to picking tray location\n\
+G0 Z[tray_Z]            ;bed up to pick up\n\
 G4 P500                 ;Wait half second\n\
 M106 S100 T[PnP_head]   ;Turn On vacuum \n\
 G4 P1500                ;Wait another 1.5 s\n\
-G1 Z[height]            ;lower bed\n\
+G0 Z[height]            ;lower bed\n\
 G4 P500                 ;another delay\n\
-G1 X[place_X] Y[place_Y];Go to place location\n\
+G0 X[place_X] Y[place_Y];Go to place location\n\
 G4 P500                 ;Delay half second\n\
 G1 Z[place_Z]           ;Place item\n\
 G4 P500                 ;Delay\n\
@@ -46,14 +46,14 @@ G4 P2000                ;delay 1s\n"
 
 Pick_Gcode_S = "\n\
 G0 Z[height]            ;lower bed 1cm\n\
-G1 X[pick_X] Y[pick_Y]  ;Go to picking tray location\n\
-G1 Z[tray_Z]            ;bed up to pick up\n\
+G0 X[pick_X] Y[pick_Y]  ;Go to picking tray location\n\
+G0 Z[tray_Z]            ;bed up to pick up\n\
 G4 P500                 ;Wait half second\n\
 M106 S100 T[PnP_head]   ;Turn On vacuum \n\
 G4 P1500                ;Wait another 1.5 s\n\
-G1 Z[height]            ;lower bed\n\
+G0 Z[height]            ;lower bed\n\
 G4 P500                 ;another delay\n\
-G1 X[place_X] Y[place_Y];Go to place location\n\
+G0 X[place_X] Y[place_Y];Go to place location\n\
 G4 P500                 ;Delay half second\n\
 G1 Z[place_Z]           ;Place item\n\
 G4 P500                 ;Delay\n\
