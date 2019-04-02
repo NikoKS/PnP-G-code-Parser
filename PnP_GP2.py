@@ -137,6 +137,7 @@ class window(QWidget):
         fbox1.addRow('Initial X Tray', self.Line1)
         fbox1.addRow('X Tray Offset', self.Line2)
         fbox1.addRow('X Tray Dimension', self.Line7)
+        fbox1.addRow('Item Height', self.Line9)
 
         fbox2 = QFormLayout()
         fbox2.addRow('Initial Y Tray', self.Line6)
@@ -150,7 +151,7 @@ class window(QWidget):
         fbox3 = QFormLayout()
         fbox3.addRow('Head X Offset',self.Line4)
         fbox3.addRow('Main Head Pos',self.Line10)
-        fbox3.addRow('Tray Item Height',self.Line9)
+        #fbox3.addRow('Tray Item Height',self.Line9)
 
         fbox4 = QFormLayout()
         fbox4.addRow('Head Y Offset',self.Line5)
@@ -231,29 +232,40 @@ class window(QWidget):
 
         #Insert PNP Operation G-Code
         for item in placePos:
+            #Use the middle point
             item[0] = round(np.mean(item[0]), 3) + float(self.Line4.text())
             item[1] = round(np.mean(item[1]), 3) + float(self.Line5.text())
             print(item)
+
+            #Other tray does not exist or pointer is a circle(>6)
             if not self.Line or item[2] > 6:
                 disp = 0            #Tray/dispenser number
                 xdim = float(self.Line7.text())
                 ydim = float(self.Line8.text())
-            else:
-                disp = item[2] - 3
+            else: #pointer is a polygon
+                disp = item[2] - 3  #Use this dispenser settings
                 xdim = float(self.Line[disp-1][2].text())
                 ydim = float(self.Line[disp-1][5].text())
 
+            #check if pick and placing magnets or regular items
             if self.Rad1.isChecked():
                 PG = Pick_Gcode_S.replace('[pick_X]', str(self.dispenser[disp][0]))
             else:
                 PG = Pick_Gcode.replace('[pick_X]', str(self.dispenser[disp][0]))
+
+            #change the place holder with actual values
             PG = PG.replace('[pick_Y]', str(self.dispenser[disp][1]))
             PG = PG.replace('[place_X]', str(item[0]))
             PG = PG.replace('[place_Y]', str(item[1]))
             PG = PG.replace('[height]', str(float(self.height[pos])+10))
-            PG = PG.replace('[tray_Z]', self.Line9.text())
+            #PG = PG.replace('[tray_Z]', self.Line9.text())
             PG = PG.replace('[place_Z]', self.height[pos])
             PG = PG.replace('[PnP_head]', self.Line11.text())
+            if disp == 0:
+                PG = PG.replace('[tray_Z]', self.Line9.text())
+            else:
+                PG = PG.replace('[tray_Z]', self.Line[disp-1][6].text())
+
             cursor.insertText(PG)
             if self.change[disp] != xdim:
                 if disp == 0:
@@ -305,7 +317,7 @@ class window(QWidget):
                 self.Etab[i] = QWidget()
                 self.tabs.addTab(self.Etab[i], 'Tray {}'.format(i))
                 self.Line.append([])
-                for j in range(6):
+                for j in range(7):
                     self.Line[i-2].append(QLineEdit())
                 hbox = QHBoxLayout()
                 fbox = [QFormLayout(), QFormLayout()]
@@ -315,6 +327,7 @@ class window(QWidget):
                 fbox[1].addRow('Initial Y Tray',self.Line[i-2][3])
                 fbox[1].addRow('Y Tray Offset',self.Line[i-2][4])
                 fbox[1].addRow('Y Tray Dimension',self.Line[i-2][5])
+                fbox[0].addRow('Item Height', self.Line[i-2][6])
                 hbox.addLayout(fbox[0])
                 hbox.addLayout(fbox[1])
                 self.Etab[i].setLayout(hbox)
