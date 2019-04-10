@@ -8,7 +8,8 @@ from sys import platform
 from PyQt5.QtWidgets import (QApplication, QTextEdit, QLabel, QTabWidget, QComboBox,
                              QVBoxLayout, QHBoxLayout, QWidget, QLineEdit, QPushButton,
                              QFormLayout, QRadioButton, QTableWidget, QFrame,
-                             QFileDialog, QMessageBox, QTableWidgetItem)
+                             QFileDialog, QMessageBox, QTableWidgetItem,
+                             QCheckBox)
 from PyQt5.QtGui import *
 
 Tool_Change_Gcode = "\n\
@@ -60,6 +61,16 @@ G4 P500                 ;Delay\n\
 M107 T[PnP_head]        ;Turn off vacuum\n\
 G4 P2000                ;delay 1s\n"
 
+Syringe_Prime = "\n\
+\n\
+G0 X[pos_x] Y[pos_y]; Move to the location to dump silver\n\
+M722 I1 T[head] ; Prime the silver syringe head\n\
+M722 I1 T[head] ; Prime the silver syringe head\n\
+G4 P[P_Delay]        ; wait for 4 seconds\n\
+M721 I1 T[head]     ; Unprime the silver syringe head\n\
+G4 P500         ; Wait half a second\n"
+
+
 keyword = ';Do PnP Stuff'
 
 class window(QWidget):
@@ -74,6 +85,8 @@ class window(QWidget):
 
         label1 = QLabel('PnP Tray Setting')
         label1.setFont(subTFont)
+        label2 = QLabel('Extra Features')
+        label2.setFont(subTFont)
         label11= QLabel('G-Code Viewer')
         label11.setFont(subTFont)
 
@@ -116,16 +129,56 @@ class window(QWidget):
         self.Rad1.setChecked(1)
         self.Rad2 = QRadioButton('Magnet')
 
+        self.Check1 = QCheckBox('Syringe Prime')
+
         self.Text1 = QTextEdit()
         self.Cpos = 0
 
         self.tabs = QTabWidget()
         tab1 = QWidget()
         self.tabs.addTab(tab1, 'Tray 1')
-        self.Line = []
-        self.Etab = {}
+        self.Line = [] #Extra trays QLineEdit
+        self.Etab = {} #Extra trays tabs
+
+        self.Extra= [] #Extra Features QLineEdit
+        for i in range(5):
+            self.Extra.append(QLineEdit())
 
         #Window Layout
+        vbox10 = QVBoxLayout()
+        vbox10.addStretch()
+        vbox10.addWidget(self.Check1)
+        vbox10.addWidget(QLabel('   and Delays'))
+        vbox10.addStretch()
+
+        vbox11 = QVBoxLayout()
+        vbox11.addWidget(QLabel('X Pos'))
+        vbox11.addWidget(self.Extra[0])
+        vbox11.addWidget(QLabel('Prime Delay(ms)'))
+        vbox11.addWidget(self.Extra[3])
+
+        vbox12 = QVBoxLayout()
+        vbox12.addWidget(QLabel('Y Pos'))
+        vbox12.addWidget(self.Extra[1])
+        vbox12.addWidget(QLabel('Drying Delay(ms)'))
+        vbox12.addWidget(self.Extra[4])
+
+        vbox13 = QVBoxLayout()
+        vbox13.addWidget(QLabel('Syringe Head Pos'))
+        vbox13.addWidget(self.Extra[2])
+        vbox13.addStretch()
+        vbox13.addStretch()
+
+        hbox7 = QHBoxLayout()
+        hbox7.addLayout(vbox10)
+        hbox7.addLayout(vbox11)
+        hbox7.addLayout(vbox12)
+        hbox7.addLayout(vbox13)
+
+        vboxExtra = QVBoxLayout()
+        vboxExtra.addWidget(label2)
+        vboxExtra.addLayout(hbox7)
+
         hbox0 = QHBoxLayout()
         hbox0.addWidget(QLabel('Number of Trays'))
         hbox0.addWidget(self.Line0)
@@ -155,7 +208,7 @@ class window(QWidget):
 
         fbox4 = QFormLayout()
         fbox4.addRow('Head Y Offset',self.Line5)
-        fbox4.addRow('PNP Hed Pos',self.Line11)
+        fbox4.addRow('PNP Head Pos',self.Line11)
 
         hbox6 = QHBoxLayout()
         hbox6.addWidget(self.Rad1)
@@ -193,6 +246,7 @@ class window(QWidget):
         vbox2.addWidget(self.tabs)
         vbox2.addStretch()
         vbox2.addLayout(hbox2)
+        vbox2.addLayout(vboxExtra)
         vbox2.addLayout(hbox3)
         vbox2.addStretch()
         vbox2.addWidget(self.But12)
@@ -211,7 +265,7 @@ class window(QWidget):
         self.setLayout(FinalBox)
 
         #Window Functions
-        self.setGeometry(300,300,1600,600)
+        self.setGeometry(300,300,1600,800)
         self.setWindowTitle('Pick and Place Gcode Parser')
         self.show()
 
@@ -230,6 +284,8 @@ class window(QWidget):
 
         pos = 0 #counter to be increased for Height list
 
+        print(self.dispenser)
+
         #Insert PNP Operation G-Code
         for item in placePos:
             #Use the middle point
@@ -243,7 +299,7 @@ class window(QWidget):
                 xdim = float(self.Line7.text())
                 ydim = float(self.Line8.text())
             else: #pointer is a polygon
-                disp = item[2] - 3  #Use this dispenser settings
+                disp = item[2] - 2  #Use this dispenser settings
                 xdim = float(self.Line[disp-1][2].text())
                 ydim = float(self.Line[disp-1][5].text())
 
@@ -267,6 +323,8 @@ class window(QWidget):
                 PG = PG.replace('[tray_Z]', self.Line[disp-1][6].text())
 
             cursor.insertText(PG)
+
+            #update next dispenser location
             if self.change[disp] != xdim:
                 if disp == 0:
                     self.dispenser[disp][0] += float(self.Line2.text())
@@ -281,8 +339,8 @@ class window(QWidget):
                     self.change[disp] = 1
                 else:
                     self.dispenser[disp][0] = float(self.Line[disp-1][2].text()) - self.Xorigin
-                    self.dispenseri[disp][1] += float(self.Line[disp-1][4].text())
-                    self.changei[disp] = 1
+                    self.dispenser[disp][1] += float(self.Line[disp-1][4].text())
+                    self.change[disp] = 1
             pos += 1
 
         TC2 = Tool_Change_Gcode2.replace('[current_head]', self.Line10.text())
@@ -343,6 +401,8 @@ class window(QWidget):
         else:
             Line = [[x.text() for x in y] for y in self.Line]
             check = all([all([self.isfloat(x) for x in y]) for y in Line])
+        if self.Check1.isChecked():
+            check = check and all([self.isfloat(y.text()) for y in self.Extra])
         if not all([self.isfloat(i) for i in Lines]) or not check:
             QMessageBox.information(self,"Warning","Not a Number Detected in Settings")
         else:
@@ -361,7 +421,17 @@ class window(QWidget):
                         num = '1,'
                     else:
                         num = str(self.Trays) + ','
-                    file_text = num + file_text
+                    Extras = []
+                    Extras.append('1' if self.Rad2.isChecked() else '0')
+                    if self.Check1.isChecked():
+                        Extras.insert(0, '1')
+                        for item in self.Extra:
+                            Extras.insert(0, item.text())
+                    else:
+                        Extras.insert(0, '0')
+                    Extras = ',' + ','.join(Extras)
+
+                    file_text = num + file_text + Extras
                     print(file_text)
                     f.write(file_text)
 
@@ -375,6 +445,14 @@ class window(QWidget):
                         self.Line7,self.Line8,self.Line9,self.Line10,self.Line11]
                 f_string = f.read()
                 item = f_string.split(',')
+                if item[-1] == '1':
+                    self.Rad2.setChecked(1)
+                if item[-2] == '1':
+                    self.Check1.setChecked(1)
+                    i = -3
+                    for j in self.Extra:
+                        j.setText(item[i])
+                        i -= 1
                 num = int(item[0])
                 for i in range(1,12):
                     Lines[i-1].setText(item[i])
@@ -458,6 +536,9 @@ class window(QWidget):
         else:
             check = all([all([self.isfloat(y.text()) for y in x]) for x in self.Line])
 
+        if self.Check1.isChecked():
+            check = check and all([self.isfloat(y.text()) for y in self.Extra])
+
         #cursor 1 find the next occurane of extruder change (T3 tool is set
         #as default for pick and place
         cursor1 = document.find('T3 ; change extruder', cursor1)
@@ -466,6 +547,24 @@ class window(QWidget):
         elif not all([self.isfloat(i) for i in Lines]) or not check:     #Check if all the input propper numbers
             QMessageBox.information(self,"Warning","Not a Number Detected in user input!")
         else:
+            # Check extra features
+            if self.Check1.isChecked():
+                cursorExtra = QTextCursor(document)
+                heads = {"11": "T0", "12": "T1", "13": "T2", "14": "T3", "15": "T4"}
+                cursorExtra = document.find(heads[self.Extra[2].text()], cursorExtra)
+                cursorExtra.movePosition(QTextCursor.Up)
+                cursorExtra.movePosition(QTextCursor.EndOfLine)
+                Text = Syringe_Prime.replace('[pos_x]', self.Extra[0].text())
+                Text = Text.replace('[pos_y]', self.Extra[1].text())
+                Text = Text.replace('[head]', self.Extra[2].text())
+                Text = Text.replace('[P_Delay]', self.Extra[3].text())
+                cursorExtra.insertText(Text)
+
+                cursorExtra = document.find(keyword, cursorExtra)
+                cursorExtra.insertText("\n\
+                                       \n\
+                                       G4 P"+self.Extra[4].text())
+
             #Set up Tray location(s)
             self.dispenser = [[float(self.Line1.text())-self.Xorigin,    #dispenser location start
                               float(self.Line6.text())-self.Yorigin]]
